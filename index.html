@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pocket Friendly — a calm money journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --paper:#EDEFE7;
+  --paper-2:#E4E7DC;
+  --ink:#233129;
+  --ink-soft:#5C6B60;
+  --pine:#3D5A46;
+  --pine-deep:#2B4033;
+  --brass:#B08D57;
+  --brick:#B5574F;
+  --slate:#5B6B72;
+  --line:#C9CFC0;
+  --white:#FAFAF6;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,.display{font-family:'Fraunces',serif;font-weight:600;letter-spacing:-0.01em;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.app{max-width:1180px;margin:0 auto;padding:0 20px 80px;}
+
+/* ---- Header ---- */
+.masthead{padding:36px 4px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+.masthead .title-block{display:flex;align-items:center;gap:14px;}
+.leaf-mark{width:38px;height:38px;flex:none;}
+.masthead h1{font-size:30px;margin:0;color:var(--pine-deep);}
+.masthead .tagline{margin:4px 0 0;font-size:13.5px;color:var(--ink-soft);font-style:italic;}
+.score-badge{position:relative;width:74px;height:74px;flex:none;}
+.score-badge svg{transform:rotate(-90deg);}
+.score-badge .track{fill:none;stroke:var(--line);stroke-width:6;}
+.score-badge .fill{fill:none;stroke:var(--brass);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .6s ease;}
+.score-badge .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.score-badge .num b{font-family:'Fraunces',serif;font-size:20px;color:var(--pine-deep);line-height:1;}
+.score-badge .num span{font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);}
+.score-wrap{display:flex;align-items:center;gap:10px;}
+.score-status{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);text-align:right;}
+.score-status b{display:block;font-family:'Fraunces',serif;font-size:15px;color:var(--pine);text-transform:none;letter-spacing:0;}
+
+/* ---- Tabs (notebook index) ---- */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:22px 0 0;padding-bottom:0;}
+.tab{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.03em;text-transform:uppercase;background:var(--paper-2);border:1px solid var(--line);border-bottom:none;color:var(--ink-soft);padding:9px 14px;border-radius:8px 8px 0 0;cursor:pointer;transition:.15s;}
+.tab:hover{color:var(--pine-deep);}
+.tab.active{background:var(--white);color:var(--pine-deep);font-weight:600;border-color:var(--line);position:relative;top:1px;}
+.panel-shell{background:var(--white);border:1px solid var(--line);border-radius:0 8px 8px 8px;padding:28px;min-height:400px;}
+section.tab-panel{display:none;}
+section.tab-panel.active{display:block;animation:fade .25s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* ---- generic ---- */
+h2.panel-title{margin:0 0 4px;font-size:22px;color:var(--pine-deep);}
+.panel-sub{margin:0 0 24px;color:var(--ink-soft);font-size:13.5px;}
+.grid{display:grid;gap:16px;}
+.grid.cols-2{grid-template-columns:1fr 1fr;}
+.grid.cols-3{grid-template-columns:repeat(3,1fr);}
+.grid.cols-4{grid-template-columns:repeat(4,1fr);}
+@media(max-width:820px){.grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:1fr;}.masthead{align-items:flex-start;}}
+
+label{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:5px;}
+input,select,textarea{width:100%;font-family:'Inter',sans-serif;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--pine);outline-offset:1px;background:var(--white);}
+.field{margin-bottom:14px;}
+.btn{font-family:'Inter',sans-serif;font-weight:600;font-size:13.5px;border:none;border-radius:7px;padding:10px 18px;cursor:pointer;background:var(--pine);color:var(--white);transition:.15s;}
+.btn:hover{background:var(--pine-deep);}
+.btn.ghost{background:transparent;border:1px solid var(--pine);color:var(--pine);}
+.btn.small{padding:5px 10px;font-size:12px;}
+.btn.danger{background:transparent;color:var(--brick);border:1px solid var(--brick);}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
+.card .kicker{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin:0 0 6px;}
+.card .value{font-family:'Fraunces',serif;font-size:26px;color:var(--pine-deep);margin:0;}
+.card .sub{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);border-bottom:1px solid var(--line);padding:8px 8px;}
+td{padding:9px 8px;border-bottom:1px dotted var(--line);}
+tr:last-child td{border-bottom:none;}
+.empty-row td{color:var(--ink-soft);font-style:italic;text-align:center;padding:22px;}
+
+.progress{height:10px;border-radius:6px;background:var(--paper-2);overflow:hidden;border:1px solid var(--line);}
+.progress > div{height:100%;border-radius:6px;}
+.pill{display:inline-block;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:20px;font-weight:600;}
+.pill.green{background:#DEE8DD;color:#2F5A3B;}
+.pill.yellow{background:#F3E6C6;color:#8A6417;}
+.pill.red{background:#F1D9D6;color:#8F332C;}
+
+.insight{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:8px;margin-bottom:8px;font-size:13.5px;position:relative;}
+.insight::before{content:"";width:5px;align-self:stretch;border-radius:3px;background:var(--brass);flex:none;}
+.insight.good::before{background:var(--pine);}
+.insight.warn::before{background:var(--brick);}
+
+.chart-box{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+.chart-box canvas{max-height:230px;}
+
+.accordion-item{border-bottom:1px solid var(--line);}
+.accordion-item:last-child{border-bottom:none;}
+.accordion-head{padding:16px 4px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:'Fraunces',serif;font-size:16px;color:var(--pine-deep);}
+.accordion-body{max-height:0;overflow:hidden;transition:max-height .25s ease;font-size:13.5px;color:var(--ink-soft);line-height:1.6;}
+.accordion-body p{padding:0 4px 16px;margin:0;}
+.accordion-item.open .accordion-body{max-height:300px;}
+.accordion-item.open .chev{transform:rotate(45deg);}
+.chev{transition:.2s;font-size:18px;color:var(--brass);}
+
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;align-items:end;margin-bottom:20px;}
+.footnote{font-size:11.5px;color:var(--ink-soft);margin-top:26px;border-top:1px dotted var(--line);padding-top:14px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="masthead">
+    <div class="title-block">
+      <svg class="leaf-mark" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="none" stroke="#3D5A46" stroke-width="1.5"/><path d="M13 24 C13 14, 22 11, 28 12 C28 20, 22 27, 13 24 Z" fill="#3D5A46"/><path d="M13 24 L26 13" stroke="#EDEFE7" stroke-width="1.2"/></svg>
+      <div>
+        <h1>Pocket Friendly</h1>
+        <p class="tagline">a calm, judgment-free money journal</p>
+      </div>
+    </div>
+    <div class="score-wrap">
+      <div class="score-status" id="scoreStatus"><b id="scoreStatusText">—</b>pocket friendly score</div>
+      <div class="score-badge">
+        <svg width="74" height="74" viewBox="0 0 74 74">
+          <circle class="track" cx="37" cy="37" r="31"></circle>
+          <circle class="fill" id="scoreRing" cx="37" cy="37" r="31" stroke-dasharray="194.7" stroke-dashoffset="194.7"></circle>
+        </svg>
+        <div class="num"><b id="scoreNum">0</b><span>/ 100</span></div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+  <div class="panel-shell"><main id="panels"></main></div>
+
+  <p class="footnote">Everything you enter here lives only in this browser tab for this session — Pocket Friendly doesn't send your numbers anywhere. Refreshing the page clears your entries, so keep an export handy if you want to save your work.</p>
+</div>
+
+<script>
+/* =========================================================
+   STATE
+   ========================================================= */
+const state = {
+  profile: { name:'', age:'', occupation:'', income:0, goal:'', risk:'Moderate' },
+  income: [],
+  expenses: [],
+  savings: [],
+  emergencyFund: 0,
+  investments: [],
+  debts: [],
+  budget: { needs:50, wants:30, savings:20 }
+};
+let uid = 1;
+const nextId = () => uid++;
+
+/* =========================================================
+   TABS
+   ========================================================= */
+const TABS = [
+  {id:'profile', label:'Profile'},
+  {id:'dashboard', label:'Dashboard'},
+  {id:'income', label:'Income'},
+  {id:'expenses', label:'Expenses'},
+  {id:'savings', label:'Savings'},
+  {id:'investments', label:'Investments'},
+  {id:'debt', label:'Debt'},
+  {id:'budget', label:'Budget'},
+  {id:'review', label:'Review'},
+  {id:'learn', label:'Learn'},
+];
+
+function renderTabs(active){
+  document.getElementById('tabs').innerHTML = TABS.map(t =>
+    `<button class="tab ${t.id===active?'active':''}" data-tab="${t.id}">${t.label}</button>`
+  ).join('');
+  document.querySelectorAll('.tab').forEach(b=>{
+    b.onclick = ()=> showTab(b.dataset.tab);
+  });
+}
+
+function showTab(id){
+  renderTabs(id);
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const el = document.getElementById('panel-'+id);
+  if(el) el.classList.add('active');
+  if(id==='dashboard') renderDashboard();
+  if(id==='review') renderReview();
+  if(id==='budget') renderBudget();
+}
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+const fmt = n => '₹' + (Number(n)||0).toLocaleString('en-IN', {maximumFractionDigits:0});
+const pct = n => (Number(n)||0).toFixed(1) + '%';
+const sum = (arr, f) => arr.reduce((s,x)=> s + (Number(f(x))||0), 0);
+const monthKey = d => (d||'').slice(0,7);
+
+function totalIncome(){ return sum(state.income, x=>x.amount) || Number(state.profile.income)||0; }
+function totalExpenses(){ return sum(state.expenses, x=>x.amount); }
+function expenseByType(type){ return sum(state.expenses.filter(x=>x.type===type), x=>x.amount); }
+function avgMonthlyExpense(){
+  const months = new Set(state.expenses.map(x=>monthKey(x.date)));
+  const t = totalExpenses();
+  return months.size ? t/months.size : t;
+}
+function totalDebtBalance(){ return sum(state.debts, x=>x.balance); }
+function totalEMI(){ return sum(state.debts, x=>x.emi); }
+function totalInvested(){ return sum(state.investments, x=>x.invested); }
+function totalCurrentValue(){ return sum(state.investments, x=>x.current); }
+function netWorth(){ return totalCurrentValue() + state.emergencyFund + sum(state.savings,x=>x.actual) - totalDebtBalance(); }
+
+/* =========================================================
+   PROFILE
+   ========================================================= */
+function panelProfile(){
+  const p = state.profile;
+  return `
+  <h2 class="panel-title">Your profile</h2>
+  <p class="panel-sub">A few basics so Pocket Friendly can tailor its insights to you.</p>
+  <div class="grid cols-2" style="max-width:640px;">
+    <div class="field"><label>Name</label><input id="pf-name" value="${p.name}"></div>
+    <div class="field"><label>Age</label><input id="pf-age" type="number" value="${p.age}"></div>
+    <div class="field"><label>Occupation</label><input id="pf-occ" value="${p.occupation}"></div>
+    <div class="field"><label>Monthly income (₹)</label><input id="pf-income" type="number" value="${p.income}"></div>
+    <div class="field" style="grid-column:1/-1;"><label>Financial goal</label><input id="pf-goal" value="${p.goal}" placeholder="e.g. Build a 6-month emergency fund"></div>
+    <div class="field"><label>Risk appetite</label>
+      <select id="pf-risk">
+        ${['Conservative','Moderate','Aggressive'].map(r=>`<option ${p.risk===r?'selected':''}>${r}</option>`).join('')}
+      </select>
+    </div>
+  </div>
+  <button class="btn" onclick="saveProfile()">Save profile</button>
+  <div id="pf-saved" style="margin-top:12px;color:var(--pine);font-size:13px;"></div>
+  `;
+}
+function saveProfile(){
+  const p = state.profile;
+  p.name = val('pf-name'); p.age = val('pf-age'); p.occupation = val('pf-occ');
+  p.income = Number(val('pf-income'))||0; p.goal = val('pf-goal'); p.risk = val('pf-risk');
+  document.getElementById('pf-saved').textContent = 'Saved. Your dashboard is now using this profile.';
+}
+const val = id => document.getElementById(id).value;
+
+/* =========================================================
+   INCOME
+   ========================================================= */
+function panelIncome(){
+  return `
+  <h2 class="panel-title">Income tracker</h2>
+  <p class="panel-sub">Log every inflow — salary, freelance, interest, gifts.</p>
+  <div class="form-row">
+    <div class="field"><label>Date</label><input id="in-date" type="date"></div>
+    <div class="field"><label>Source</label><input id="in-source" placeholder="e.g. Employer"></div>
+    <div class="field"><label>Type</label><select id="in-type"><option>Salary</option><option>Freelance</option><option>Interest</option><option>Gift</option><option>Other</option></select></div>
+    <div class="field"><label>Amount (₹)</label><input id="in-amount" type="number"></div>
+    <div class="field"><label>Notes</label><input id="in-notes"></div>
+    <button class="btn" onclick="addIncome()">Add entry</button>
+  </div>
+  <div class="grid cols-3" style="margin-bottom:20px;">
+    <div class="card"><p class="kicker">Total income</p><p class="value">${fmt(totalIncome())}</p></div>
+    <div class="card"><p class="kicker">Entries</p><p class="value mono">${state.income.length}</p></div>
+    <div class="card"><p class="kicker">Average / entry</p><p class="value">${fmt(state.income.length? totalIncome()/state.income.length:0)}</p></div>
+  </div>
+  <table><thead><tr><th>Date</th><th>Source</th><th>Type</th><th>Amount</th><th>Notes</th><th></th></tr></thead>
+  <tbody>${state.income.length ? state.income.map(rowIncome).join('') : `<tr class="empty-row"><td colspan="6">No income logged yet — add your first entry above.</td></tr>`}</tbody></table>
+  `;
+}
+function rowIncome(x){
+  return `<tr><td>${x.date||'—'}</td><td>${x.source||'—'}</td><td>${x.type}</td><td class="mono">${fmt(x.amount)}</td><td>${x.notes||''}</td>
+  <td><button class="btn small danger" onclick="removeItem('income',${x.id})">Remove</button></td></tr>`;
+}
+function addIncome(){
+  const amount = Number(val('in-amount'));
+  if(!amount){ return; }
+  state.income.push({id:nextId(), date:val('in-date'), source:val('in-source'), type:val('in-type'), amount, notes:val('in-notes')});
+  refresh('income');
+}
+
+/* =========================================================
+   EXPENSES
+   ========================================================= */
+function panelExpenses(){
+  const need=expenseByType('Needs'), want=expenseByType('Wants'), other=expenseByType('Others');
+  const total = totalExpenses()||1;
+  const catTotals = {};
+  state.expenses.forEach(x=> catTotals[x.category] = (catTotals[x.category]||0) + Number(x.amount));
+  const topCat = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0];
+  return `
+  <h2 class="panel-title">Expense tracker</h2>
+  <p class="panel-sub">Tag every expense as a Need, a Want, or Other so the dashboard can read your spending shape.</p>
+  <div class="form-row">
+    <div class="field"><label>Date</label><input id="ex-date" type="date"></div>
+    <div class="field"><label>Type</label><select id="ex-type"><option>Needs</option><option>Wants</option><option>Others</option></select></div>
+    <div class="field"><label>Category</label><input id="ex-cat" placeholder="e.g. Food, Rent, Travel"></div>
+    <div class="field"><label>Amount (₹)</label><input id="ex-amount" type="number"></div>
+    <div class="field"><label>Notes</label><input id="ex-notes"></div>
+    <button class="btn" onclick="addExpense()">Add entry</button>
+  </div>
+  <div class="grid cols-4" style="margin-bottom:20px;">
+    <div class="card"><p class="kicker">Total spent</p><p class="value">${fmt(totalExpenses())}</p></div>
+    <div class="card"><p class="kicker">Needs</p><p class="value">${pct(need/total*100)}</p></div>
+    <div class="card"><p class="kicker">Wants</p><p class="value">${pct(want/total*100)}</p></div>
+    <div class="card"><p class="kicker">Others</p><p class="value">${pct(other/total*100)}</p></div>
+  </div>
+  ${topCat ? `<div class="insight"><div>Top spending category: <b>${topCat[0]}</b> at ${fmt(topCat[1])} (${pct(topCat[1]/total*100)} of all spending).</div></div>` : ''}
+  <table><thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Amount</th><th>Notes</th><th></th></tr></thead>
+  <tbody>${state.expenses.length ? state.expenses.map(rowExpense).join('') : `<tr class="empty-row"><td colspan="6">No expenses logged yet.</td></tr>`}</tbody></table>
+  `;
+}
+function rowExpense(x){
+  return `<tr><td>${x.date||'—'}</td><td><span class="pill ${x.type==='Needs'?'green':x.type==='Wants'?'yellow':'red'}">${x.type}</span></td><td>${x.category||'—'}</td><td class="mono">${fmt(x.amount)}</td><td>${x.notes||''}</td>
+  <td><button class="btn small danger" onclick="removeItem('expenses',${x.id})">Remove</button></td></tr>`;
+}
+function addExpense(){
+  const amount = Number(val('ex-amount'));
+  if(!amount) return;
+  state.expenses.push({id:nextId(), date:val('ex-date'), type:val('ex-type'), category:val('ex-cat'), amount, notes:val('ex-notes')});
+  refresh('expenses');
+}
+
+/* =========================================================
+   SAVINGS
+   ========================================================= */
+function panelSavings(){
+  return `
+  <h2 class="panel-title">Savings tracker</h2>
+  <p class="panel-sub">Track savings goals against what you actually set aside, and keep your emergency fund balance current.</p>
+  <div class="grid cols-2" style="margin-bottom:20px;max-width:640px;">
+    <div class="field"><label>Emergency fund balance (₹)</label><input id="ef-balance" type="number" value="${state.emergencyFund}" onchange="state.emergencyFund=Number(this.value)||0; refresh('savings')"></div>
+    <div class="field"><label>Savings rate (auto)</label><input value="${pct(totalIncome()? (totalIncome()-totalExpenses())/totalIncome()*100 : 0)}" disabled></div>
+  </div>
+  <div class="form-row">
+    <div class="field"><label>Goal name</label><input id="sv-name" placeholder="e.g. Vacation fund"></div>
+    <div class="field"><label>Target (₹)</label><input id="sv-target" type="number"></div>
+    <div class="field"><label>Actual saved (₹)</label><input id="sv-actual" type="number"></div>
+    <button class="btn" onclick="addSaving()">Add goal</button>
+  </div>
+  <table><thead><tr><th>Goal</th><th>Target</th><th>Actual</th><th>Progress</th><th></th></tr></thead>
+  <tbody>${state.savings.length ? state.savings.map(rowSaving).join('') : `<tr class="empty-row"><td colspan="5">No savings goals yet.</td></tr>`}</tbody></table>
+  `;
+}
+function rowSaving(x){
+  const p = x.target ? Math.min(100, x.actual/x.target*100) : 0;
+  return `<tr><td>${x.name}</td><td class="mono">${fmt(x.target)}</td><td class="mono">${fmt(x.actual)}</td>
+  <td><div class="progress" style="width:120px;"><div style="width:${p}%;background:var(--pine);"></div></div></td>
+  <td><button class="btn small danger" onclick="removeItem('savings',${x.id})">Remove</button></td></tr>`;
+}
+function addSaving(){
+  const target = Number(val('sv-target')), actual = Number(val('sv-actual'))||0;
+  const name = val('sv-name');
+  if(!name || !target) return;
+  state.savings.push({id:nextId(), name, target, actual});
+  refresh('savings');
+}
+
+/* =========================================================
+   INVESTMENTS
+   ========================================================= */
+function panelInvestments(){
+  const invested = totalInvested(), current = totalCurrentValue();
+  const gain = current - invested;
+  const ret = invested ? (gain/invested*100) : 0;
+  return `
+  <h2 class="panel-title">Investment tracker</h2>
+  <p class="panel-sub">Log each holding to see allocation, gains, and how it lines up with your risk appetite.</p>
+  <div class="form-row">
+    <div class="field"><label>Type</label><select id="iv-type"><option>Equity</option><option>Debt</option><option>Gold</option><option>Others</option></select></div>
+    <div class="field"><label>Invested (₹)</label><input id="iv-invested" type="number"></div>
+    <div class="field"><label>Current value (₹)</label><input id="iv-current" type="number"></div>
+    <div class="field"><label>Date</label><input id="iv-date" type="date"></div>
+    <button class="btn" onclick="addInvestment()">Add holding</button>
+  </div>
+  <div class="grid cols-4" style="margin-bottom:20px;">
+    <div class="card"><p class="kicker">Total invested</p><p class="value">${fmt(invested)}</p></div>
+    <div class="card"><p class="kicker">Current value</p><p class="value">${fmt(current)}</p></div>
+    <div class="card"><p class="kicker">Gain / loss</p><p class="value" style="color:${gain>=0?'var(--pine)':'var(--brick)'}">${gain>=0?'+':''}${fmt(gain)}</p></div>
+    <div class="card"><p class="kicker">Return</p><p class="value" style="color:${ret>=0?'var(--pine)':'var(--brick)'}">${ret>=0?'+':''}${pct(ret)}</p></div>
+  </div>
+  <table><thead><tr><th>Type</th><th>Invested</th><th>Current</th><th>Return</th><th>Date</th><th></th></tr></thead>
+  <tbody>${state.investments.length ? state.investments.map(rowInvestment).join('') : `<tr class="empty-row"><td colspan="6">No holdings logged yet.</td></tr>`}</tbody></table>
+  `;
+}
+function rowInvestment(x){
+  const r = x.invested ? ((x.current-x.invested)/x.invested*100) : 0;
+  return `<tr><td>${x.type}</td><td class="mono">${fmt(x.invested)}</td><td class="mono">${fmt(x.current)}</td>
+  <td class="mono" style="color:${r>=0?'var(--pine)':'var(--brick)'}">${r>=0?'+':''}${pct(r)}</td><td>${x.date||'—'}</td>
+  <td><button class="btn small danger" onclick="removeItem('investments',${x.id})">Remove</button></td></tr>`;
+}
+function addInvestment(){
+  const invested = Number(val('iv-invested')), current = Number(val('iv-current'));
+  if(!invested) return;
+  state.investments.push({id:nextId(), type:val('iv-type'), invested, current: current||invested, date:val('iv-date')});
+  refresh('investments');
+}
+
+/* =========================================================
+   DEBT
+   ========================================================= */
+function panelDebt(){
+  const bal = totalDebtBalance(), emi = totalEMI(), inc = totalIncome()||1;
+  const ratio = emi/inc*100;
+  return `
+  <h2 class="panel-title">Debt tracker</h2>
+  <p class="panel-sub">List every loan so Pocket Friendly can gauge how much of your income is spoken for.</p>
+  <div class="form-row">
+    <div class="field"><label>Loan type</label><input id="db-type" placeholder="e.g. Home loan, Credit card"></div>
+    <div class="field"><label>Outstanding balance (₹)</label><input id="db-balance" type="number"></div>
+    <div class="field"><label>Monthly EMI (₹)</label><input id="db-emi" type="number"></div>
+    <div class="field"><label>Interest rate (%)</label><input id="db-rate" type="number" step="0.1"></div>
+    <button class="btn" onclick="addDebt()">Add loan</button>
+  </div>
+  <div class="grid cols-3" style="margin-bottom:20px;">
+    <div class="card"><p class="kicker">Total outstanding</p><p class="value">${fmt(bal)}</p></div>
+    <div class="card"><p class="kicker">Monthly EMI</p><p class="value">${fmt(emi)}</p></div>
+    <div class="card"><p class="kicker">Debt-to-income</p><p class="value">${pct(ratio)}</p></div>
+  </div>
+  <table><thead><tr><th>Type</th><th>Balance</th><th>EMI</th><th>Rate</th><th>Payoff (months)</th><th></th></tr></thead>
+  <tbody>${state.debts.length ? state.debts.map(rowDebt).join('') : `<tr class="empty-row"><td colspan="6">No loans logged — nice and clean.</td></tr>`}</tbody></table>
+  `;
+}
+function rowDebt(x){
+  const months = x.emi ? Math.ceil(x.balance/x.emi) : '—';
+  return `<tr><td>${x.type}</td><td class="mono">${fmt(x.balance)}</td><td class="mono">${fmt(x.emi)}</td><td class="mono">${x.rate||0}%</td><td class="mono">${months}</td>
+  <td><button class="btn small danger" onclick="removeItem('debts',${x.id})">Remove</button></td></tr>`;
+}
+function addDebt(){
+  const balance = Number(val('db-balance')), emi = Number(val('db-emi'));
+  if(!balance) return;
+  state.debts.push({id:nextId(), type:val('db-type')||'Loan', balance, emi, rate:Number(val('db-rate'))||0});
+  refresh('debt');
+}
+
+/* =========================================================
+   BUDGET (50-30-20)
+   ========================================================= */
+function panelBudget(){
+  return `
+  <h2 class="panel-title">Budget planner</h2>
+  <p class="panel-sub">Set your target split, then see how actual spending compares. Defaults to the 50/30/20 rule — adjust freely.</p>
+  <div class="form-row" style="max-width:520px;">
+    <div class="field"><label>Needs target %</label><input id="bg-needs" type="number" value="${state.budget.needs}"></div>
+    <div class="field"><label>Wants target %</label><input id="bg-wants" type="number" value="${state.budget.wants}"></div>
+    <div class="field"><label>Savings target %</label><input id="bg-savings" type="number" value="${state.budget.savings}"></div>
+    <button class="btn" onclick="saveBudget()">Update targets</button>
+  </div>
+  <div id="budget-body"></div>
+  `;
+}
+function saveBudget(){
+  state.budget = {needs:Number(val('bg-needs'))||0, wants:Number(val('bg-wants'))||0, savings:Number(val('bg-savings'))||0};
+  renderBudget();
+}
+function renderBudget(){
+  const box = document.getElementById('budget-body');
+  if(!box) return;
+  const income = totalIncome()||1;
+  const need=expenseByType('Needs'), want=expenseByType('Wants'), sav=income-totalExpenses();
+  const rows = [
+    ['Needs', state.budget.needs, need/income*100],
+    ['Wants', state.budget.wants, want/income*100],
+    ['Savings', state.budget.savings, sav/income*100],
+  ];
+  box.innerHTML = `
+  <table><thead><tr><th>Bucket</th><th>Target %</th><th>Actual %</th><th>Deviation</th></tr></thead>
+  <tbody>${rows.map(([name,target,actual])=>{
+    const dev = actual-target;
+    return `<tr><td>${name}</td><td class="mono">${target}%</td><td class="mono">${pct(actual)}</td>
+    <td class="mono" style="color:${Math.abs(dev)<=3?'var(--pine)':'var(--brick)'}">${dev>=0?'+':''}${dev.toFixed(1)}pp</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+let chartExpense, chartAlloc;
+function panelDashboard(){
+  return `
+  <h2 class="panel-title">Smart dashboard</h2>
+  <p class="panel-sub">Your financial control center — read the room before you make your next move.</p>
+  <div id="dash-cards" class="grid cols-4" style="margin-bottom:22px;"></div>
+  <div class="grid cols-2" style="margin-bottom:22px;">
+    <div>
+      <h3 style="font-size:15px;color:var(--pine-deep);margin:0 0 8px;">Emergency fund</h3>
+      <div id="dash-ef"></div>
+    </div>
+    <div>
+      <h3 style="font-size:15px;color:var(--pine-deep);margin:0 0 8px;">Debt health</h3>
+      <div id="dash-debt"></div>
+    </div>
+  </div>
+  <div class="grid cols-2" style="margin-bottom:22px;">
+    <div class="chart-box"><h3 style="font-size:14px;margin:0 0 10px;color:var(--ink-soft);">Expense breakdown</h3><canvas id="chartExpense"></canvas></div>
+    <div class="chart-box"><h3 style="font-size:14px;margin:0 0 10px;color:var(--ink-soft);">Investment allocation</h3><canvas id="chartAlloc"></canvas></div>
+  </div>
+  <h3 style="font-size:15px;color:var(--pine-deep);margin:0 0 8px;">Insights</h3>
+  <div id="dash-insights"></div>
+  `;
+}
+
+function computeScore(m){
+  // savings rate (0-30), budget adherence (0-20), emergency fund (0-20), debt ratio (0-15), investment growth (0-15)
+  const savingsScore = Math.max(0, Math.min(30, m.savingsRate/40*30));
+  const adherence = 100 - Math.min(100, Math.abs((m.wantsPct) - state.budget.wants) + Math.abs(m.needsPct - state.budget.needs));
+  const adherenceScore = Math.max(0, Math.min(20, adherence/100*20));
+  const efScore = Math.max(0, Math.min(20, m.monthsCovered/6*20));
+  const debtScore = Math.max(0, Math.min(15, 15 - (m.debtRatio/40*15)));
+  const investScore = Math.max(0, Math.min(15, 7.5 + (m.returnPct/20*7.5)));
+  return Math.round(savingsScore+adherenceScore+efScore+debtScore+investScore);
+}
+
+function renderDashboard(){
+  const income = totalIncome(), expenses = totalExpenses();
+  const savingsRate = income ? (income-expenses)/income*100 : 0;
+  const nw = netWorth();
+  const need=expenseByType('Needs'), want=expenseByType('Wants'), other=expenseByType('Others');
+  const total = totalExpenses()||1;
+  const needsPct = need/total*100, wantsPct = want/total*100, othersPct = other/total*100;
+
+  const efTarget = avgMonthlyExpense()*6;
+  const monthsCovered = avgMonthlyExpense() ? state.emergencyFund/avgMonthlyExpense() : 0;
+  const efPct = efTarget ? Math.min(100, state.emergencyFund/efTarget*100) : 0;
+  const efColor = monthsCovered>=6 ? 'green' : monthsCovered>=3 ? 'yellow' : 'red';
+  const efHex = monthsCovered>=6 ? 'var(--pine)' : monthsCovered>=3 ? 'var(--brass)' : 'var(--brick)';
+
+  const invested = totalInvested(), current = totalCurrentValue();
+  const returnPct = invested ? (current-invested)/invested*100 : 0;
+
+  const debtBal = totalDebtBalance(), emi = totalEMI();
+  const debtRatio = income ? emi/income*100 : 0;
+  const debtColor = debtRatio<20?'green':debtRatio<40?'yellow':'red';
+  const debtHex = debtRatio<20?'var(--pine)':debtRatio<40?'var(--brass)':'var(--brick)';
+  const payoffMonths = emi ? Math.ceil(debtBal/emi) : 0;
+
+  const m = {savingsRate, needsPct, wantsPct, monthsCovered, debtRatio, returnPct};
+  const score = income ? computeScore(m) : 0;
+  const status = score>=80?'Excellent':score>=60?'Stable':'Needs attention';
+
+  // header score ring
+  const circumference = 194.7;
+  document.getElementById('scoreNum').textContent = score;
+  document.getElementById('scoreStatusText').textContent = status;
+  document.getElementById('scoreRing').style.strokeDashoffset = circumference - (circumference*score/100);
+
+  document.getElementById('dash-cards').innerHTML = `
+    <div class="card"><p class="kicker">Income vs expenses</p><p class="value">${fmt(income)} <span style="color:var(--ink-soft);font-size:14px;">/ ${fmt(expenses)}</span></p></div>
+    <div class="card"><p class="kicker">Savings rate</p><p class="value">${pct(savingsRate)}</p></div>
+    <div class="card"><p class="kicker">Net worth</p><p class="value">${fmt(nw)}</p></div>
+    <div class="card"><p class="kicker">Pocket Friendly Score</p><p class="value">${score} <span style="color:var(--ink-soft);font-size:14px;">${status}</span></p></div>
+  `;
+
+  document.getElementById('dash-ef').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="mono" style="font-size:13px;">${(monthsCovered).toFixed(1)} / 6 months</span>
+        <span class="pill ${efColor}">${efColor==='green'?'Secure':efColor==='yellow'?'Building':'At risk'}</span>
+      </div>
+      <div class="progress"><div style="width:${efPct}%;background:${efHex};"></div></div>
+      <p class="sub">Target: ${fmt(efTarget)} · Current: ${fmt(state.emergencyFund)}</p>
+    </div>
+  `;
+  document.getElementById('dash-debt').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="mono" style="font-size:13px;">${pct(debtRatio)} of income</span>
+        <span class="pill ${debtColor}">${debtColor==='green'?'Low debt':debtColor==='yellow'?'Moderate':'High risk'}</span>
+      </div>
+      <div class="progress"><div style="width:${Math.min(100,debtRatio*2)}%;background:${debtHex};"></div></div>
+      <p class="sub">Outstanding: ${fmt(debtBal)} · EMI: ${fmt(emi)}${payoffMonths?` · Debt-free in ~${payoffMonths} months at current EMI`:''}</p>
+    </div>
+  `;
+
+  // charts
+  const ctx1 = document.getElementById('chartExpense');
+  if(chartExpense) chartExpense.destroy();
+  if(ctx1) chartExpense = new Chart(ctx1, {type:'doughnut', data:{labels:['Needs','Wants','Others'], datasets:[{data:[need,want,other], backgroundColor:['#3D5A46','#B08D57','#B5574F'], borderColor:'#FAFAF6', borderWidth:2}]}, options:{plugins:{legend:{position:'bottom', labels:{font:{family:'Inter'}, color:'#5C6B60'}}}}});
+
+  const allocMap = {};
+  state.investments.forEach(x=> allocMap[x.type] = (allocMap[x.type]||0) + Number(x.current));
+  const ctx2 = document.getElementById('chartAlloc');
+  if(chartAlloc) chartAlloc.destroy();
+  if(ctx2) chartAlloc = new Chart(ctx2, {type:'doughnut', data:{labels:Object.keys(allocMap).length?Object.keys(allocMap):['No holdings yet'], datasets:[{data:Object.keys(allocMap).length?Object.values(allocMap):[1], backgroundColor:['#3D5A46','#B08D57','#5B6B72','#B5574F'], borderColor:'#FAFAF6', borderWidth:2}]}, options:{plugins:{legend:{position:'bottom', labels:{font:{family:'Inter'}, color:'#5C6B60'}}}}});
+
+  // insights
+  const insights = [];
+  const catTotals = {};
+  state.expenses.forEach(x=> catTotals[x.category] = (catTotals[x.category]||0) + Number(x.amount));
+  const topCat = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0];
+  if(topCat) insights.push({t:`Top spending category: ${topCat[0]} at ${pct(topCat[1]/total*100)} of total spend.`, k:'warn'});
+  if(wantsPct > state.budget.wants + 3) insights.push({t:`You exceeded your wants budget — ${pct(wantsPct)} spent against a ${state.budget.wants}% target.`, k:'warn'});
+  else if(income) insights.push({t:`You're within your wants budget — nice discipline.`, k:'good'});
+  if(monthsCovered>=6) insights.push({t:`You're financially secure for ${monthsCovered.toFixed(1)} months — emergency fund goal met.`, k:'good'});
+  else insights.push({t:`Build your emergency fund to reach 6 months of safety — you're at ${monthsCovered.toFixed(1)} today.`, k:'warn'});
+  if(debtRatio>=40) insights.push({t:`${pct(debtRatio)} of your income goes toward debt — consider a repayment strategy.`, k:'warn'});
+  else if(debtBal>0) insights.push({t:`${pct(debtRatio)} of your income goes toward debt — manageable for now.`, k:'good'});
+  if(invested>0) insights.push({t:`Your portfolio has ${returnPct>=0?'grown':'declined'} by ${pct(Math.abs(returnPct))} since you started investing.`, k:returnPct>=0?'good':'warn'});
+  if(!income) insights.push({t:`Add your income and a few expenses to unlock personalised insights.`, k:'warn'});
+
+  document.getElementById('dash-insights').innerHTML = insights.map(i=>`<div class="insight ${i.k}">${i.t}</div>`).join('');
+}
+
+/* =========================================================
+   REVIEW
+   ========================================================= */
+function renderReview(){
+  const el = document.getElementById('panel-review');
+  const months = new Set([...state.income.map(x=>monthKey(x.date)), ...state.expenses.map(x=>monthKey(x.date))]);
+  months.delete('');
+  const rows = [...months].sort().map(mo=>{
+    const inc = sum(state.income.filter(x=>monthKey(x.date)===mo), x=>x.amount);
+    const exp = sum(state.expenses.filter(x=>monthKey(x.date)===mo), x=>x.amount);
+    return `<tr><td>${mo}</td><td class="mono">${fmt(inc)}</td><td class="mono">${fmt(exp)}</td><td class="mono">${fmt(inc-exp)}</td></tr>`;
+  }).join('');
+  el.innerHTML = `
+  <h2 class="panel-title">Monthly review</h2>
+  <p class="panel-sub">A running record, month by month. Use it for your monthly or quarterly check-in.</p>
+  <div class="grid cols-3" style="margin-bottom:20px;">
+    <div class="card"><p class="kicker">Net worth today</p><p class="value">${fmt(netWorth())}</p></div>
+    <div class="card"><p class="kicker">Months tracked</p><p class="value mono">${months.size}</p></div>
+    <div class="card"><p class="kicker">Goal</p><p class="value" style="font-size:16px;">${state.profile.goal||'Not set yet'}</p></div>
+  </div>
+  <table><thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net</th></tr></thead>
+  <tbody>${rows || `<tr class="empty-row"><td colspan="4">Log entries with dates to build your review history.</td></tr>`}</tbody></table>
+  `;
+}
+
+/* =========================================================
+   LEARN
+   ========================================================= */
+const LEARN = [
+  ['Income tracking', 'Every rupee that comes in — salary, freelance work, interest, gifts. Knowing your true monthly inflow is the starting point for every other number in this journal.'],
+  ['Expense tracking', 'Sorting spending into Needs, Wants, and Others reveals your spending shape, not just the total. It\'s the difference between "I spent ₹40,000" and "I spent 60% on needs, 30% on wants."'],
+  ['Savings', 'The gap between what you earn and what you spend. A healthy savings rate — often cited around 20% — gives you room for goals and surprises.'],
+  ['Emergency fund', 'Cash set aside purely for the unexpected — job loss, medical bills, urgent repairs. A common target is six months of expenses, kept somewhere accessible, not invested.'],
+  ['Investments', 'Money put to work for growth — equity, debt instruments, gold, and more. What matters here is not just returns, but whether your mix matches your risk appetite and timeline.'],
+  ['Debt', 'Money you owe, and what it costs you monthly (EMI). A debt-to-income ratio under roughly 20-30% is usually considered comfortable; higher ratios squeeze your flexibility.'],
+  ['Net worth', 'Everything you own (savings, investments, emergency fund) minus everything you owe (debt). It\'s the single number that best captures your financial trajectory over time.'],
+];
+function panelLearn(){
+  return `
+  <h2 class="panel-title">Learn the basics</h2>
+  <p class="panel-sub">Plain-language explanations for every term used in this journal.</p>
+  <div>${LEARN.map((x,i)=>`
+    <div class="accordion-item" id="acc-${i}">
+      <div class="accordion-head" onclick="toggleAcc(${i})"><span>${x[0]}</span><span class="chev">+</span></div>
+      <div class="accordion-body"><p>${x[1]}</p></div>
+    </div>
+  `).join('')}</div>
+  `;
+}
+function toggleAcc(i){ document.getElementById('acc-'+i).classList.toggle('open'); }
+
+/* =========================================================
+   GLUE
+   ========================================================= */
+function removeItem(list, id){
+  state[list] = state[list].filter(x=>x.id!==id);
+  refresh(list==='income'?'income':list==='expenses'?'expenses':list==='savings'?'savings':list==='investments'?'investments':'debt');
+}
+
+const PANEL_FN = {
+  profile: panelProfile, income: panelIncome, expenses: panelExpenses,
+  savings: panelSavings, investments: panelInvestments, debt: panelDebt,
+  budget: panelBudget, dashboard: panelDashboard, learn: panelLearn,
+};
+
+function refresh(activeId){
+  document.getElementById('panels').innerHTML = TABS.map(t=>{
+    if(t.id==='review') return `<section id="panel-review" class="tab-panel"></section>`;
+    return `<section id="panel-${t.id}" class="tab-panel">${PANEL_FN[t.id] ? PANEL_FN[t.id]() : ''}</section>`;
+  }).join('');
+  showTab(activeId || 'dashboard');
+}
+
+refresh('dashboard');
+</script>
+</body>
+</html>
